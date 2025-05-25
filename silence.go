@@ -1,14 +1,22 @@
 package amclient
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Silence struct {
 	ID        string    `json:"id,omitempty"`
+	Status    Status    `json:"status"`
 	Matchers  []Matcher `json:"matchers"`
 	StartsAt  string    `json:"startsAt"`
 	EndsAt    string    `json:"endsAt"`
 	CreatedBy string    `json:"createdBy"`
 	Comment   string    `json:"comment"`
+}
+
+type Status struct {
+	State string `json:"state"`
 }
 
 type Matcher struct {
@@ -21,6 +29,33 @@ type Matcher struct {
 func (c *Client) GetSilences() ([]Silence, error) {
 	var silences []Silence
 	err := c.Get("/api/v2/silences", &silences)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var activeSilences []Silence
+	now := time.Now()
+
+	// Get only Active and Pending
+	for _, s := range silences {
+		if s.Status.State == "expired" {
+			continue
+		}
+
+		endsAtTime, err := time.Parse(time.RFC3339, s.EndsAt)
+		if err != nil {
+			fmt.Printf("failed to parse EndsAt for silence %s: %v\n", s.ID, err)
+			continue
+		}
+
+		if endsAtTime.Before(now) {
+			continue
+		}
+
+		activeSilences = append(activeSilences, s)
+	}
+
 	return silences, err
 }
 
@@ -33,9 +68,5 @@ func (c *Client) CreateSilence(silence Silence) (string, error) {
 }
 
 func (c *Client) DeleteSilence(id string) error {
-	err := c.Delete(fmt.Sprintf("/api/v2/silence/%s", id))
-	if err != nil {
-		return fmt.Errorf("failed to delete silence %s: %w", id, err)
-	}
-	return nil
+	return c.Delete(fmt.Sprintf("/api/v2/silence/%s", id))
 }

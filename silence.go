@@ -56,7 +56,7 @@ func (c *Client) GetSilences() ([]Silence, error) {
 		activeSilences = append(activeSilences, s)
 	}
 
-	return silences, err
+	return activeSilences, err
 }
 
 func (c *Client) CreateSilence(silence Silence) (string, error) {

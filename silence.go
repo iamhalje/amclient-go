@@ -15,6 +15,7 @@ type Matcher struct {
 	Name    string `json:"name"`
 	Value   string `json:"value"`
 	IsRegex bool   `json:"isRegex"`
+	IsEqual bool   `json:"isEqual"`
 }
 
 func (c *Client) GetSilences() ([]Silence, error) {
@@ -32,5 +33,9 @@ func (c *Client) CreateSilence(silence Silence) (string, error) {
 }
 
 func (c *Client) DeleteSilence(id string) error {
-	return c.Delete(fmt.Sprintf("api/v2/silence/%s", id))
+	err := c.Delete(fmt.Sprintf("/api/v2/silence/%s", id))
+	if err != nil {
+		return fmt.Errorf("failed to delete silence %s: %w", id, err)
+	}
+	return nil
 }
